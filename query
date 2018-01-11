@@ -1,0 +1,139 @@
+Insertion statements
+check data.sql files
+
+
+
+
+
+
+
+query answers
+-------------
+
+
+1. All registered user who has played a particular content in a specified date range
+
+1. registered
+2. played particular content
+3. specified date range.
+
+
+select userdata.userid,userdata.age,userdata.status,userdata.place,userdata.gender from userdata,contentplaydata where userdata.userid=contentplaydata.userid AND contentplaydata.theday between 1 and 10 AND contentplaydata.themonth='dec' AND contentplaydata.thecontentid=15 AND userdata.status LIKE 'registered';
+
+
+
+
+2. 
+All anonymous users who has session duration greater than x mins
+
+
+1. anonymous users
+2. session duration greater than 15 mins
+
+select userdata.userid,userdata.age,userdata.status,userdata.place,userdata.gender from userdata,sessiondata where userdata.userid=sessiondata.userid AND sessiondata.themins>15 
+
+
+
+3. 
+Anonymous users between age 18 to 40, located in India or China or USA, who has done at least 10 content views
+
+1. anonymous users yes
+2. between age 18 and 40 yes
+3. located in india or china or usa yes 
+4. count of content view is atleast 10	 yes
+
+select userdata.userid from userdata where   (userdata.age >= 18 and userdata.age<=40) and userdata.userid in (
+ select userdata.userid  from userdata,contentviewdata where (userdata.userid=contentviewdata.userid) and 
+  (userdata.status LIKE 'anonymous' ) AND (userdata.place like 'india' OR userdata.place like 'china' or userdata.place like 'usa') group by userdata.userid having count(*)>=10) 
+
+
+4. All subscribed users who has not done any content playback action in past 1 month
+
+1. subscribed users 
+2. not done any content playback action
+
+
+select * from userdata where userdata.status like 'subscribed' and userdata.userid not in (select distinct contentplaydata.userid from contentplaydata)
+
+
+5.    Users who did more than 5 content view for a particular content but has not played the content
+
+these are the users who have viewed a particular  content more than 5 times.
+
+
+select * from userdata where  userdata.userid not in (select distinct contentplaydata.userid from contentplaydata) and  userdata.userid in (
+ select userdata.userid  from userdata,contentviewdata where (userdata.userid=contentviewdata.userid) and contentviewdata.thecontentid=109 
+    group by userdata.userid having count(*)>5) 
+
+
+EXPECTED OUTPUT
+--------------
+
+
+1.  Estimated Reach for the above queries with Total Count which is further split into count per age groups ( 18-30, 30-40,40-50,50-60), per gender type, user status ( Anonymous, Registered, Subscribers ), % split per country
+
+
+check usersegmentation_sql files, 
+
+less than 1 second
+
+4. Do consider the below use cases while putting together the solution:
+
+
+-        How will you validate if a user belongs to a segment or not ?
+
+
+Since the database schema has been designed in such a fashion to easily validate if the user belongs to a segment, this validation can be easily done by means of 
+a query like
+
+if the user id is given and we have to see if he belongs to a segment say age 18-60 
+
+we check if there is a record with the given user id say 609 and the segment info 30-40. if such a record exists, then the user is in that segment.
+
+select count(*) from userdata where userdata.age<=40 and userdata.age>=60 and userdata.userid=18382;
+
+
+
+
+
+-        How will you identify correlation patterns between different cohorts ? Eg: Users within the age group of 18-20 has higher affinity to playback comedy content.
+
+1.we can do a join on the userdata and contentplaydata tables on userid 
+
+2. you can group by range-age and genre and get the count. See which age group has affinity towards comedy
+
+
+select concat(7 * round(userdata.age / 7), '-', 7 * round(userdata.age / 7) + 6) as `range`,dummydata1.thegenre,count(*)
+from    userdata INNER JOIN  dummydata1   on userdata.userid = dummydata1.userid group by 1,dummydata1.thegenre order by userdata.age
+
+
+-        How will you predict if a user has a higher probability of falling into a particular segment ?  
+
+
+if you find that male customers have higher affinity  towards action movies, the probability of a new customer falling into the segment of action movies is pretty high
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
